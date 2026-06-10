@@ -45,31 +45,35 @@ useful even when no session is running.
 ```bash
 git clone https://github.com/<you>/DankClaudeUsage ~/Projects/DankClaudeUsage
 
-# 1. Make the plugin discoverable by DMS
+# Make the plugin discoverable by DMS
 ln -sfn ~/Projects/DankClaudeUsage/plugins/claudeUsage \
         ~/.config/DankMaterialShell/plugins/claudeUsage
-
-# 2. Install the writer (wraps your Claude Code statusline; backs it up first)
-sh ~/Projects/DankClaudeUsage/writer/install.sh
 ```
 
 Then in DMS: **Settings → Plugins → Scan**, enable **Claude Usage**, and add it
-to a DankBar section (**Settings → DankBar Layout**). Open any Claude Code
-session once so the writer populates the cache.
+to a DankBar section (**Settings → DankBar Layout**).
 
-### What the writer install does
+To start the data flowing, click **Set up live updates** — in the widget's
+popout, or in its plugin settings. That's it; no terminal. Open or continue a
+Claude Code session and the rings populate.
 
-`install.sh` reads `~/.claude/settings.json`, backs it up to a timestamped
-`settings.json.bak.<ts>`, and rewrites `statusLine.command` to run the writer
-*before* your existing statusline (your original output is preserved). It's
-idempotent. To undo:
+### What "Set up live updates" does
+
+It reads `~/.claude/settings.json`, backs it up to a timestamped
+`settings.json.bak.<ts>`, and rewrites `statusLine.command` to run the bundled
+writer *before* your existing statusline (your original output is preserved).
+It's idempotent. **Remove** (in plugin settings) restores your original
+statusline.
+
+If you prefer the terminal, the same scripts live in the plugin folder:
 
 ```bash
-sh ~/Projects/DankClaudeUsage/writer/uninstall.sh
+sh ~/.config/DankMaterialShell/plugins/claudeUsage/install.sh
+sh ~/.config/DankMaterialShell/plugins/claudeUsage/uninstall.sh
 ```
 
-If you'd rather wire it yourself, point your statusline at:
-`sh /path/to/writer/claude-usage-writer.sh <your existing statusline command>`
+Or wire it yourself — point your statusline at:
+`sh /path/to/plugins/claudeUsage/claude-usage-writer.sh <your existing statusline command>`
 The writer passes stdin through to the wrapped command unchanged.
 
 ### Alternative: OAuth poller (no statusline edit, refreshes while idle)
@@ -111,6 +115,9 @@ not yet shipped. <!-- TODO: ship oauth-poller.sh + a systemd user timer example 
 `resets_at` is Unix epoch seconds. `seven_day_sonnet` is optional.
 
 ## Development & tests
+
+The writer/installer scripts live in `plugins/claudeUsage/` so the plugin folder
+is self-contained and can set itself up. Tests:
 
 ```bash
 sh tests/test-writer.sh     # writer: cache schema, ISO/epoch normalization, passthrough

@@ -14,6 +14,11 @@ Item {
     property bool hasData: fiveHour !== null || sevenDay !== null
     property int nowEpoch: Math.floor(Date.now() / 1000)
 
+    // Whether the statusline writer is wired into Claude Code's settings.
+    property bool writerInstalled: false
+    readonly property string _claudeSettingsPath:
+        (Quickshell.env("HOME") || "") + "/.claude/settings.json"
+
     readonly property string _defaultPath:
         (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache"))
         + "/dms-claude-usage.json"
@@ -65,5 +70,23 @@ Item {
         onLoadFailed: error => {
             console.log("claudeUsage: cache not loaded:", error)
         }
+    }
+
+    FileView {
+        id: claudeSettingsFile
+        path: root._claudeSettingsPath
+        blockLoading: false
+        watchChanges: true
+        onLoaded: {
+            try {
+                const cmd = (JSON.parse(claudeSettingsFile.text())
+                    .statusLine || {}).command || ""
+                root.writerInstalled = cmd.indexOf("claude-usage-writer.sh") !== -1
+            } catch (e) {
+                root.writerInstalled = false
+            }
+        }
+        onFileChanged: reload()
+        onLoadFailed: error => { root.writerInstalled = false }
     }
 }

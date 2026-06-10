@@ -11,5 +11,5 @@
   "icon": "speed",
   "requires_dms": ">=0.1.0",
   "requires": ["jq"],
-  "permissions": ["settings_read", "settings_write"]
+  "permissions": ["settings_read", "settings_write", "process"]
 }
