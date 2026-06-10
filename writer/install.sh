@@ -14,7 +14,7 @@ fi
 current=$(jq -r '.statusLine.command // ""' "$SETTINGS")
 
 case "$current" in
-  *claude-usage-writer.sh*)
+  "sh "*"claude-usage-writer.sh"*)
     echo "Already installed: writer is present in statusLine.command."
     exit 0
     ;;

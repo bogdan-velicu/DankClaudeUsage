@@ -1,6 +1,8 @@
 #!/bin/sh
 # uninstall.sh — remove the writer prefix from statusLine.command, restoring the
-# original wrapped command. Falls back to the most recent backup if needed.
+# original wrapped command. If the writer wrapped nothing, the statusLine key is
+# removed entirely. (Timestamped settings backups from install.sh are kept on
+# disk for manual recovery; this script does not auto-restore them.)
 set -u
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 SETTINGS="${CLAUDE_SETTINGS:-$HOME/.claude/settings.json}"

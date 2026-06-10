@@ -15,7 +15,11 @@ tmp="$cache.tmp.$$"
 
 printf '%s' "$input" | jq --argjson now "$now" '
   def toepoch(s):
-    s | gsub("\\+00:00$"; "Z") | gsub("\\+0000$"; "Z") | fromdateiso8601;
+    # Best-effort ISO-8601 -> epoch. Claude Code currently emits integer epochs;
+    # this branch only runs for the ISO-string fallback. Strip any timezone
+    # designator (Z or +/-HH:MM / +/-HHMM) and interpret the time as UTC, so a
+    # valid ISO timestamp never silently parses to null.
+    s | sub("(Z|[+-][0-9]{2}:?[0-9]{2})$"; "") | strptime("%Y-%m-%dT%H:%M:%S") | mktime;
   def norm(b):
     if b == null then null
     else { used_percentage: b.used_percentage,
