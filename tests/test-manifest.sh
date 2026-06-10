@@ -1,7 +1,7 @@
 #!/bin/sh
 set -u
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
-M="$ROOT/plugins/claudeUsage/plugin.json"
+M="$ROOT/plugin.json"
 fail() { echo "FAIL: $1"; exit 1; }
 jq -e . "$M" >/dev/null 2>&1 || fail "plugin.json is not valid JSON"
 for k in id name description version author type capabilities component; do

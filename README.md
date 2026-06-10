@@ -53,11 +53,11 @@ automatically.
 
 ## Install
 
-```bash
-git clone https://github.com/<you>/DankClaudeUsage ~/Projects/DankClaudeUsage
+Clone the repo straight into the DMS plugins directory:
 
-ln -sfn ~/Projects/DankClaudeUsage/plugins/claudeUsage \
-        ~/.config/DankMaterialShell/plugins/claudeUsage
+```bash
+git clone https://github.com/bogdan-velicu/DankClaudeUsage \
+          ~/.config/DankMaterialShell/plugins/claudeUsage
 ```
 
 Then in DMS: **Settings → Plugins → Scan**, enable **Claude Usage**, and add it

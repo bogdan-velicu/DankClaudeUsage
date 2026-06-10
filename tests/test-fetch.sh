@@ -2,7 +2,7 @@
 # Test fetch-usage.sh normalization against a sample API response (no network).
 set -u
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
-FETCH="$ROOT/plugins/claudeUsage/fetch-usage.sh"
+FETCH="$ROOT/fetch-usage.sh"
 SAMPLE="$ROOT/fixtures/oauth-usage-sample.json"
 CACHE=$(mktemp)
 fail() { echo "FAIL: $1"; exit 1; }
