@@ -1,0 +1,15 @@
+{
+  "id": "claudeUsage",
+  "name": "Claude Usage",
+  "description": "Claude Code 5-hour and weekly subscription limits in the bar.",
+  "version": "0.1.0",
+  "author": "Bogdan Velicu",
+  "type": "widget",
+  "capabilities": ["dankbar-widget"],
+  "component": "./ClaudeUsageWidget.qml",
+  "settings": "./ClaudeUsageSettings.qml",
+  "icon": "speed",
+  "requires_dms": ">=0.1.0",
+  "requires": ["jq"],
+  "permissions": ["settings_read", "settings_write"]
+}
