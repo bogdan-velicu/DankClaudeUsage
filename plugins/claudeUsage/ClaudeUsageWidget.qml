@@ -1,3 +1,4 @@
+// Claude Code usage limits as a DankBar pill + popout.
 import QtQuick
 import QtQuick.Layouts
 import qs.Common
@@ -6,80 +7,51 @@ import qs.Modules.Plugins
 
 PluginComponent {
     id: root
-
     pluginId: "claudeUsage"
 
-    readonly property string displayStyle: pluginData.displayStyle || "filledRing"
-    readonly property bool showFiveHour: pluginData.showFiveHour !== undefined ? pluginData.showFiveHour : true
-    readonly property bool showWeekly: pluginData.showWeekly !== undefined ? pluginData.showWeekly : true
-    readonly property bool showSonnetWeekly: pluginData.showSonnetWeekly !== undefined ? pluginData.showSonnetWeekly : false
-    readonly property int warningThreshold: pluginData.warningThreshold !== undefined ? parseInt(pluginData.warningThreshold) : 70
-    readonly property int criticalThreshold: pluginData.criticalThreshold !== undefined ? parseInt(pluginData.criticalThreshold) : 90
-    readonly property bool pulseOnCritical: pluginData.pulseOnCritical !== undefined ? pluginData.pulseOnCritical : true
-    readonly property int staleMinutes: pluginData.staleMinutes !== undefined ? parseInt(pluginData.staleMinutes) : 60
-    readonly property int refreshSeconds: pluginData.refreshInterval !== undefined ? parseInt(pluginData.refreshInterval) : 300
-    readonly property string cachePathOverride: pluginData.cachePath || ""
+    // Tunables (kept in code to keep the settings UI small).
+    readonly property int warnPct: 70    // amber at/above this
+    readonly property int critPct: 90    // red at/above this
+    readonly property int staleMinutes: 60
 
-    ClaudeUsageData {
-        id: data
-        cachePath: root.cachePathOverride
-        refreshMs: root.refreshSeconds * 1000
-    }
+    // Settings.
+    readonly property string displayStyle: pluginData.displayStyle || "rings"   // "rings" | "numbers"
+    readonly property bool showFiveHour: pluginData.showFiveHour !== false
+    readonly property bool showWeekly: pluginData.showWeekly !== false
 
-    // Accessors so the inline bar/popout Components never reference the `data`
-    // child id directly (it isn't reliably in their binding scope across DMS
-    // versions); everything is reached through `root`, which always resolves.
+    ClaudeUsageData { id: data }
+
+    // Reach data only through root — inline Components can't resolve a child id.
     readonly property bool hasData: data.hasData
     readonly property bool fetchFailed: data.fetchFailed
-    readonly property int nowTick: data.nowEpoch
-    readonly property bool anyCritical:
-        (showFiveHour && data.fiveHour && isCritical(data.fiveHour.used_percentage))
-        || (showWeekly && data.sevenDay && isCritical(data.sevenDay.used_percentage))
-    function countdown(resetEpoch) { return data.countdown(resetEpoch) }
-    function minutesSinceCapture() { return data.minutesSinceCapture() }
+    readonly property int tick: data.now
+    function countdown(reset) { return data.countdown(reset) }
+    function minutesOld() { return data.minutesOld() }
 
-    function rampColor(pct) {
-        if (pct >= root.criticalThreshold) return Theme.error
-        if (pct >= root.warningThreshold) return Theme.warning
-        return Theme.primary
+    function color(pct) {
+        return pct >= critPct ? Theme.error : pct >= warnPct ? Theme.warning : Theme.primary
     }
 
-    function isCritical(pct) {
-        return pct >= root.criticalThreshold
-    }
-
-    function _shownLimits() {
+    // The limits to display, in order: [{name, pct, reset}, ...].
+    function limits() {
         const out = []
-        if (root.showFiveHour && data.fiveHour)
-            out.push({name: "5-hour", short: "5h", pct: data.fiveHour.used_percentage, reset: data.fiveHour.resets_at})
-        if (root.showWeekly && data.sevenDay)
-            out.push({name: "Weekly", short: "7d", pct: data.sevenDay.used_percentage, reset: data.sevenDay.resets_at})
-        if (root.showSonnetWeekly && data.sevenDaySonnet)
-            out.push({name: "Weekly (Sonnet)", short: "7dS", pct: data.sevenDaySonnet.used_percentage, reset: data.sevenDaySonnet.resets_at})
+        if (showFiveHour && data.fiveHour)
+            out.push({name: "5-hour", pct: data.fiveHour.used_percentage, reset: data.fiveHour.resets_at})
+        if (showWeekly && data.sevenDay)
+            out.push({name: "Weekly", pct: data.sevenDay.used_percentage, reset: data.sevenDay.resets_at})
         return out
-    }
-
-    function _numbersText() {
-        return "✳ " + root._shownLimits().map(l => l.pct + "%").join(" · ")
     }
 
     horizontalBarPill: Component {
         StyledRect {
             id: pill
-            implicitWidth: rowH.implicitWidth + Theme.spacingM * 2
+            implicitWidth: row.implicitWidth + Theme.spacingM * 2
             height: parent.widgetThickness
             radius: Theme.cornerRadius
             color: Theme.surfaceContainerHigh
 
-            SequentialAnimation on opacity {
-                running: root.pulseOnCritical && root.anyCritical
-                loops: Animation.Infinite
-                NumberAnimation { to: 0.55; duration: 600 }
-                NumberAnimation { to: 1.0; duration: 600 }
-            }
-
             RowLayout {
-                id: rowH
+                id: row
                 anchors.centerIn: parent
                 spacing: Theme.spacingS
 
@@ -91,12 +63,10 @@ PluginComponent {
                 }
 
                 Repeater {
-                    model: root.hasData && (root.displayStyle === "filledRing" || root.displayStyle === "hollowRing")
-                           ? root._shownLimits() : []
+                    model: root.hasData && root.displayStyle === "rings" ? root.limits() : []
                     delegate: UsageRing {
                         percentage: modelData.pct
-                        ringColor: root.rampColor(modelData.pct)
-                        hollow: root.displayStyle === "hollowRing"
+                        ringColor: root.color(modelData.pct)
                         diameter: Math.max(12, Math.min(pill.height - 8, 22))
                         Layout.alignment: Qt.AlignVCenter
                     }
@@ -104,35 +74,9 @@ PluginComponent {
 
                 StyledText {
                     visible: root.hasData && root.displayStyle === "numbers"
-                    text: root._numbersText()
+                    text: "✳ " + root.limits().map(l => l.pct + "%").join(" · ")
                     color: Theme.surfaceText
                     font.pixelSize: Theme.fontSizeMedium
-                }
-
-                Repeater {
-                    model: root.hasData && root.displayStyle === "bar" ? root._shownLimits() : []
-                    delegate: Row {
-                        spacing: 4
-                        Rectangle {
-                            width: 34
-                            height: 6
-                            radius: 3
-                            anchors.verticalCenter: parent.verticalCenter
-                            color: Theme.surfaceVariant
-                            Rectangle {
-                                width: parent.width * Math.min(1, modelData.pct / 100)
-                                height: parent.height
-                                radius: 3
-                                color: root.rampColor(modelData.pct)
-                            }
-                        }
-                        StyledText {
-                            text: modelData.pct + "%"
-                            color: Theme.surfaceText
-                            font.pixelSize: Theme.fontSizeSmall
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
                 }
             }
         }
@@ -141,13 +85,13 @@ PluginComponent {
     verticalBarPill: Component {
         StyledRect {
             id: pillV
-            implicitHeight: colV.implicitHeight + Theme.spacingM * 2
             width: parent.widgetThickness
+            implicitHeight: col.implicitHeight + Theme.spacingM * 2
             radius: Theme.cornerRadius
             color: Theme.surfaceContainerHigh
 
             ColumnLayout {
-                id: colV
+                id: col
                 anchors.centerIn: parent
                 spacing: Theme.spacingS
 
@@ -159,11 +103,10 @@ PluginComponent {
                 }
 
                 Repeater {
-                    model: root.hasData ? root._shownLimits() : []
+                    model: root.hasData ? root.limits() : []
                     delegate: UsageRing {
                         percentage: modelData.pct
-                        ringColor: root.rampColor(modelData.pct)
-                        hollow: root.displayStyle === "hollowRing"
+                        ringColor: root.color(modelData.pct)
                         diameter: Math.max(12, Math.min(pillV.width - 8, 20))
                         Layout.alignment: Qt.AlignHCenter
                     }
@@ -173,44 +116,37 @@ PluginComponent {
     }
 
     popoutWidth: 320
-    popoutHeight: 240
-
+    popoutHeight: 220
     popoutContent: Component {
         PopoutComponent {
-            id: popoutInner
             headerText: "Claude Usage"
             showCloseButton: true
-            closePopout: function() { root.closePopout() }
+            closePopout: function () { root.closePopout() }
 
             Column {
                 width: parent.width
                 spacing: Theme.spacingM
 
                 Repeater {
-                    model: root._shownLimits()
+                    model: root.limits()
                     delegate: Row {
-                        width: parent.width
                         spacing: Theme.spacingM
-
                         UsageRing {
                             percentage: modelData.pct
-                            ringColor: root.rampColor(modelData.pct)
+                            ringColor: root.color(modelData.pct)
                             diameter: 34
                             anchors.verticalCenter: parent.verticalCenter
                         }
-
                         Column {
                             anchors.verticalCenter: parent.verticalCenter
-
                             StyledText {
                                 text: modelData.name
                                 color: Theme.surfaceText
                                 font.pixelSize: Theme.fontSizeMedium
                                 font.weight: Font.Medium
                             }
-
                             StyledText {
-                                property int _nowEpoch: root.nowTick
+                                readonly property int t: root.tick   // re-evaluate the countdown each second
                                 text: modelData.pct + "% used · resets in " + root.countdown(modelData.reset)
                                 color: Theme.surfaceVariantText
                                 font.pixelSize: Theme.fontSizeSmall
@@ -223,7 +159,7 @@ PluginComponent {
                     width: parent.width
                     visible: !root.hasData
                     text: root.fetchFailed
-                        ? "Couldn't read Claude usage. Is Claude Code signed in? Run `claude` and `/login`, then reopen."
+                        ? "Couldn't read Claude usage. Is Claude Code signed in? Run `claude` then `/login`."
                         : "Loading usage…"
                     wrapMode: Text.WordWrap
                     color: Theme.surfaceVariantText
@@ -231,16 +167,14 @@ PluginComponent {
                 }
 
                 StyledText {
-                    width: parent.width
-                    visible: root.hasData
-                    property int mins: root.minutesSinceCapture()
-                    property int _nowEpoch: root.nowTick
-                    text: mins < 0 ? "" : (mins <= root.staleMinutes
+                    readonly property int mins: root.hasData ? root.minutesOld() : -1
+                    readonly property int t: root.tick
+                    visible: mins >= 0
+                    text: mins <= root.staleMinutes
                         ? "updated " + (mins <= 0 ? "just now" : mins + "m ago")
-                        : "data may be stale (" + mins + "m) — open a Claude Code session to refresh.")
+                        : "stale (" + mins + "m) — is Claude Code signed in?"
                     color: mins > root.staleMinutes ? Theme.warning : Theme.surfaceTextMedium
                     font.pixelSize: Theme.fontSizeSmall
-                    wrapMode: Text.WordWrap
                 }
             }
         }

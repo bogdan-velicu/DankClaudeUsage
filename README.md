@@ -8,13 +8,11 @@ A [DankMaterialShell](https://github.com/AvengeMedia/DankMaterialShell) DankBar 
 
 ## What it looks like
 
-Four selectable bar styles (all use your active DMS theme palette, shifting
-`primary → warning → error` as a limit fills, pulsing when critical):
+Two bar styles, both using your active DMS theme palette (shifting
+`primary → warning → error` as a limit fills):
 
-- **Filled ring** — progress ring with the percentage in the center *(default)*
-- **Hollow ring** — outline track + arc, percentage below
-- **Numbers only** — `✳ 15% · 4%`
-- **Mini bar** — a small horizontal progress bar
+- **Rings** — a progress ring per limit with the percentage in the center *(default)*
+- **Numbers** — `✳ 15% · 4%`
 
 Clicking the pill opens a popout with one row per limit, each showing the
 percentage and a live "resets in …" countdown, plus an "updated Xm ago" footer.
@@ -68,16 +66,13 @@ showing usage within a few seconds.
 
 | Setting | Default | Notes |
 |---|---|---|
-| Display style | Filled ring | filled ring / hollow ring / numbers / mini bar |
+| Display style | Rings | rings (% in the center) or numbers (`✳ 15% · 4%`) |
 | Show 5‑hour limit | on | |
 | Show weekly limit | on | |
-| Show weekly Sonnet limit | off | shown only when the endpoint reports it |
-| Warning threshold | 70% | switch to the warning color |
-| Critical threshold | 90% | switch to the error color and pulse |
-| Pulse when critical | on | |
-| Stale after | 1 hour | flag the data as stale in the popout |
-| Refresh interval | 5 minutes | how often to query the endpoint (3/5/10 min) |
-| Cache path override | *(blank)* | default `$XDG_CACHE_HOME/dms-claude-usage.json` |
+
+Rings shift `primary → warning → error` as a limit fills. The thresholds (70/90),
+refresh interval (5 min), and stale window (1 h) are named constants at the top of
+`ClaudeUsageWidget.qml` / `ClaudeUsageData.qml` — tweak them there if you like.
 
 ## Cache format
 
@@ -85,13 +80,11 @@ showing usage within a few seconds.
 {
   "captured_at": 1781090000,
   "five_hour":  { "used_percentage": 15, "resets_at": 1781091000 },
-  "seven_day":  { "used_percentage": 4,  "resets_at": 1781575200 },
-  "seven_day_sonnet": { "used_percentage": 3, "resets_at": 1781575200 }
+  "seven_day":  { "used_percentage": 4,  "resets_at": 1781575200 }
 }
 ```
 
-`resets_at` is Unix epoch seconds. `seven_day_sonnet`/`seven_day_opus` are
-optional (present only when the endpoint reports them).
+`resets_at` is Unix epoch seconds.
 
 ## Development & tests
 
