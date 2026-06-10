@@ -17,7 +17,9 @@ Two bar styles, both using your active DMS theme palette (shifting
 Clicking the pill opens a popout with one row per limit, each showing the
 percentage and a live "resets in …" countdown, plus an "updated Xm ago" footer.
 
-<!-- TODO: add screenshots of each style here before publishing -->
+<p align="center">
+  <img src="assets/popout.png" alt="Claude Usage bar pill and popout" width="320">
+</p>
 
 ## How it works
 
@@ -73,6 +75,10 @@ showing usage within a few seconds.
 Rings shift `primary → warning → error` as a limit fills. The thresholds (70/90),
 refresh interval (5 min), and stale window (1 h) are named constants at the top of
 `ClaudeUsageWidget.qml` / `ClaudeUsageData.qml` — tweak them there if you like.
+
+<p align="center">
+  <img src="assets/settings.png" alt="Claude Usage plugin settings" width="460">
+</p>
 
 ## Cache format
 
