@@ -2,7 +2,7 @@
 # Test claude-usage-writer.sh against fixtures. Exit non-zero on any failure.
 set -u
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
-WRITER="$ROOT/writer/claude-usage-writer.sh"
+WRITER="$ROOT/plugins/claudeUsage/claude-usage-writer.sh"
 TMPCACHE=$(mktemp)
 fail() { echo "FAIL: $1"; exit 1; }
 
