@@ -26,6 +26,18 @@ PluginComponent {
         refreshMs: root.refreshSeconds * 1000
     }
 
+    // Accessors so the inline bar/popout Components never reference the `data`
+    // child id directly (it isn't reliably in their binding scope across DMS
+    // versions); everything is reached through `root`, which always resolves.
+    readonly property bool hasData: data.hasData
+    readonly property bool fetchFailed: data.fetchFailed
+    readonly property int nowTick: data.nowEpoch
+    readonly property bool anyCritical:
+        (showFiveHour && data.fiveHour && isCritical(data.fiveHour.used_percentage))
+        || (showWeekly && data.sevenDay && isCritical(data.sevenDay.used_percentage))
+    function countdown(resetEpoch) { return data.countdown(resetEpoch) }
+    function minutesSinceCapture() { return data.minutesSinceCapture() }
+
     function rampColor(pct) {
         if (pct >= root.criticalThreshold) return Theme.error
         if (pct >= root.warningThreshold) return Theme.warning
@@ -59,11 +71,8 @@ PluginComponent {
             radius: Theme.cornerRadius
             color: Theme.surfaceContainerHigh
 
-            property bool anyCritical: (root.showFiveHour && data.fiveHour && root.isCritical(data.fiveHour.used_percentage))
-                || (root.showWeekly && data.sevenDay && root.isCritical(data.sevenDay.used_percentage))
-
             SequentialAnimation on opacity {
-                running: root.pulseOnCritical && pill.anyCritical
+                running: root.pulseOnCritical && root.anyCritical
                 loops: Animation.Infinite
                 NumberAnimation { to: 0.55; duration: 600 }
                 NumberAnimation { to: 1.0; duration: 600 }
@@ -75,14 +84,14 @@ PluginComponent {
                 spacing: Theme.spacingS
 
                 StyledText {
-                    visible: !data.hasData
+                    visible: !root.hasData
                     text: "✳ --"
                     color: Theme.surfaceTextMedium
                     font.pixelSize: Theme.fontSizeMedium
                 }
 
                 Repeater {
-                    model: data.hasData && (root.displayStyle === "filledRing" || root.displayStyle === "hollowRing")
+                    model: root.hasData && (root.displayStyle === "filledRing" || root.displayStyle === "hollowRing")
                            ? root._shownLimits() : []
                     delegate: UsageRing {
                         percentage: modelData.pct
@@ -94,14 +103,14 @@ PluginComponent {
                 }
 
                 StyledText {
-                    visible: data.hasData && root.displayStyle === "numbers"
+                    visible: root.hasData && root.displayStyle === "numbers"
                     text: root._numbersText()
                     color: Theme.surfaceText
                     font.pixelSize: Theme.fontSizeMedium
                 }
 
                 Repeater {
-                    model: data.hasData && root.displayStyle === "bar" ? root._shownLimits() : []
+                    model: root.hasData && root.displayStyle === "bar" ? root._shownLimits() : []
                     delegate: Row {
                         spacing: 4
                         Rectangle {
@@ -143,14 +152,14 @@ PluginComponent {
                 spacing: Theme.spacingS
 
                 StyledText {
-                    visible: !data.hasData
+                    visible: !root.hasData
                     text: "✳"
                     color: Theme.surfaceTextMedium
                     font.pixelSize: Theme.fontSizeMedium
                 }
 
                 Repeater {
-                    model: data.hasData ? root._shownLimits() : []
+                    model: root.hasData ? root._shownLimits() : []
                     delegate: UsageRing {
                         percentage: modelData.pct
                         ringColor: root.rampColor(modelData.pct)
@@ -201,8 +210,8 @@ PluginComponent {
                             }
 
                             StyledText {
-                                property int _nowEpoch: data.nowEpoch
-                                text: modelData.pct + "% used · resets in " + data.countdown(modelData.reset)
+                                property int _nowEpoch: root.nowTick
+                                text: modelData.pct + "% used · resets in " + root.countdown(modelData.reset)
                                 color: Theme.surfaceVariantText
                                 font.pixelSize: Theme.fontSizeSmall
                             }
@@ -212,8 +221,8 @@ PluginComponent {
 
                 StyledText {
                     width: parent.width
-                    visible: !data.hasData
-                    text: data.fetchFailed
+                    visible: !root.hasData
+                    text: root.fetchFailed
                         ? "Couldn't read Claude usage. Is Claude Code signed in? Run `claude` and `/login`, then reopen."
                         : "Loading usage…"
                     wrapMode: Text.WordWrap
@@ -223,9 +232,9 @@ PluginComponent {
 
                 StyledText {
                     width: parent.width
-                    visible: data.hasData
-                    property int mins: data.minutesSinceCapture()
-                    property int _nowEpoch: data.nowEpoch
+                    visible: root.hasData
+                    property int mins: root.minutesSinceCapture()
+                    property int _nowEpoch: root.nowTick
                     text: mins < 0 ? "" : (mins <= root.staleMinutes
                         ? "updated " + (mins <= 0 ? "just now" : mins + "m ago")
                         : "data may be stale (" + mins + "m) — open a Claude Code session to refresh.")
