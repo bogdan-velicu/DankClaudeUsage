@@ -64,11 +64,21 @@ PluginComponent {
 
                 Repeater {
                     model: root.hasData && root.displayStyle === "rings" ? root.limits() : []
-                    delegate: UsageRing {
-                        percentage: modelData.pct
-                        ringColor: root.color(modelData.pct)
-                        diameter: Math.max(12, Math.min(pill.height - 8, 22))
+                    delegate: Row {
+                        spacing: 5
                         Layout.alignment: Qt.AlignVCenter
+                        UsageRing {
+                            percentage: modelData.pct
+                            ringColor: root.color(modelData.pct)
+                            diameter: Math.max(12, Math.min(pill.height - 9, 18))
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                        StyledText {
+                            text: modelData.pct + "%"
+                            color: Theme.surfaceText
+                            font.pixelSize: Theme.fontSizeMedium
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
                     }
                 }
 
@@ -104,11 +114,21 @@ PluginComponent {
 
                 Repeater {
                     model: root.hasData ? root.limits() : []
-                    delegate: UsageRing {
-                        percentage: modelData.pct
-                        ringColor: root.color(modelData.pct)
-                        diameter: Math.max(12, Math.min(pillV.width - 8, 20))
+                    delegate: Column {
+                        spacing: 1
                         Layout.alignment: Qt.AlignHCenter
+                        UsageRing {
+                            percentage: modelData.pct
+                            ringColor: root.color(modelData.pct)
+                            diameter: Math.max(12, Math.min(pillV.width - 8, 18))
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+                        StyledText {
+                            text: modelData.pct + "%"
+                            color: Theme.surfaceText
+                            font.pixelSize: Theme.fontSizeSmall
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
                     }
                 }
             }
@@ -134,7 +154,8 @@ PluginComponent {
                         UsageRing {
                             percentage: modelData.pct
                             ringColor: root.color(modelData.pct)
-                            diameter: 34
+                            diameter: 30
+                            thickness: 3.5
                             anchors.verticalCenter: parent.verticalCenter
                         }
                         Column {

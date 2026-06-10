@@ -1,14 +1,14 @@
-// A circular progress ring with the percentage in the center.
+// A small circular progress gauge. The percentage is shown beside it (by the
+// caller), not inside — it's unreadable at bar size.
 import QtQuick
 import qs.Common
-import qs.Widgets
 
 Item {
     id: root
     property int percentage: 0          // 0..100
     property color ringColor: Theme.primary
-    property int diameter: 22
-    property real thickness: 3
+    property int diameter: 16
+    property real thickness: 2.5
 
     implicitWidth: diameter
     implicitHeight: diameter
@@ -42,12 +42,5 @@ Item {
             function onPercentageChanged() { canvas.requestPaint() }
             function onRingColorChanged() { canvas.requestPaint() }
         }
-    }
-
-    StyledText {
-        anchors.centerIn: parent
-        text: root.percentage + "%"
-        font.pixelSize: Math.round(root.diameter * 0.34)
-        color: Theme.surfaceText
     }
 }
