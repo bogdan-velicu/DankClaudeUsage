@@ -86,7 +86,8 @@ PluginComponent {
                         percentage: modelData.pct
                         ringColor: root.rampColor(modelData.pct)
                         hollow: root.displayStyle === "hollowRing"
-                        diameter: Math.min(parent.height - 4, 22)
+                        diameter: Math.max(12, Math.min(pill.height - 8, 22))
+                        Layout.alignment: Qt.AlignVCenter
                     }
                 }
 
@@ -128,6 +129,7 @@ PluginComponent {
 
     verticalBarPill: Component {
         StyledRect {
+            id: pillV
             implicitHeight: colV.implicitHeight + Theme.spacingM * 2
             width: parent.widgetThickness
             radius: Theme.cornerRadius
@@ -151,7 +153,8 @@ PluginComponent {
                         percentage: modelData.pct
                         ringColor: root.rampColor(modelData.pct)
                         hollow: root.displayStyle === "hollowRing"
-                        diameter: Math.min(parent.width - 4, 20)
+                        diameter: Math.max(12, Math.min(pillV.width - 8, 20))
+                        Layout.alignment: Qt.AlignHCenter
                     }
                 }
             }
