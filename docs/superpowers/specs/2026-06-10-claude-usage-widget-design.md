@@ -1,8 +1,22 @@
 # DankClaudeUsage — DMS DankBar Widget Design
 
 **Date:** 2026-06-10
-**Status:** Approved design, pre-implementation
+**Status:** Implemented — but the data source was changed during build (see addendum).
 **Target:** DankMaterialShell (DMS) plugin, distributed publicly + submitted to the DMS Plugin Registry (plugins.danklinux.com)
+
+> **Addendum (2026-06-10, during implementation): data source switched from
+> Approach A to Approach B.** The original design fed the cache from the Claude
+> Code statusline (requiring a one-time statusline wrap). In testing this proved
+> to be poor UX — it needed a setup step. We verified the undocumented OAuth
+> endpoint `GET https://api.anthropic.com/api/oauth/usage` works with the token
+> in `~/.claude/.credentials.json` (headers `anthropic-beta: oauth-2025-04-20`,
+> `User-Agent: claude-code/<ver>`); it returns richer data (`utilization` floats,
+> `five_hour`/`seven_day`/`seven_day_sonnet`/`seven_day_opus`/`extra_usage`). The
+> widget now polls this directly via a bundled `fetch-usage.sh` (with a 150s
+> cross-instance freshness guard to stay under the endpoint's aggressive rate
+> limiting) — **zero setup**. The statusline writer + install/uninstall scripts +
+> in-app setup UI were removed. The cache schema and all visual/settings design
+> below are unchanged; only the box that fills the cache differs.
 
 ## Goal
 

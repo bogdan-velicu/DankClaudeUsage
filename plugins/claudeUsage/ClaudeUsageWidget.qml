@@ -1,29 +1,13 @@
 import QtQuick
 import QtQuick.Layouts
-import Quickshell
 import qs.Common
 import qs.Widgets
-import qs.Services
 import qs.Modules.Plugins
 
 PluginComponent {
     id: root
 
     pluginId: "claudeUsage"
-
-    // Directory this plugin was loaded from (used to find the writer scripts).
-    readonly property string pluginDir: Qt.resolvedUrl(".").toString().replace("file://", "")
-
-    function setupWriter() {
-        Quickshell.execDetached(["sh", root.pluginDir + "install.sh"])
-        ToastService.showInfo("Claude Usage: live updates enabled",
-            "Open or continue a Claude Code session to populate the data.")
-    }
-
-    function removeWriter() {
-        Quickshell.execDetached(["sh", root.pluginDir + "uninstall.sh"])
-        ToastService.showInfo("Claude Usage: live updates disabled")
-    }
 
     readonly property string displayStyle: pluginData.displayStyle || "filledRing"
     readonly property bool showFiveHour: pluginData.showFiveHour !== undefined ? pluginData.showFiveHour : true
@@ -33,11 +17,13 @@ PluginComponent {
     readonly property int criticalThreshold: pluginData.criticalThreshold !== undefined ? parseInt(pluginData.criticalThreshold) : 90
     readonly property bool pulseOnCritical: pluginData.pulseOnCritical !== undefined ? pluginData.pulseOnCritical : true
     readonly property int staleMinutes: pluginData.staleMinutes !== undefined ? parseInt(pluginData.staleMinutes) : 60
+    readonly property int refreshSeconds: pluginData.refreshInterval !== undefined ? parseInt(pluginData.refreshInterval) : 300
     readonly property string cachePathOverride: pluginData.cachePath || ""
 
     ClaudeUsageData {
         id: data
         cachePath: root.cachePathOverride
+        refreshMs: root.refreshSeconds * 1000
     }
 
     function rampColor(pct) {
@@ -191,37 +177,6 @@ PluginComponent {
                 width: parent.width
                 spacing: Theme.spacingM
 
-                // One-click setup card, shown until the writer is wired in.
-                StyledRect {
-                    width: parent.width
-                    visible: !data.writerInstalled
-                    radius: Theme.cornerRadius
-                    color: Theme.surfaceContainerHigh
-                    implicitHeight: setupCol.implicitHeight + Theme.spacingM * 2
-
-                    Column {
-                        id: setupCol
-                        x: Theme.spacingM
-                        y: Theme.spacingM
-                        width: parent.width - Theme.spacingM * 2
-                        spacing: Theme.spacingS
-
-                        StyledText {
-                            width: parent.width
-                            text: "Live updates aren't set up yet. This wraps your Claude Code statusline (backed up first) so usage refreshes automatically."
-                            wrapMode: Text.WordWrap
-                            color: Theme.surfaceVariantText
-                            font.pixelSize: Theme.fontSizeSmall
-                        }
-
-                        DankButton {
-                            text: "Set up live updates"
-                            iconName: "bolt"
-                            onClicked: root.setupWriter()
-                        }
-                    }
-                }
-
                 Repeater {
                     model: root._shownLimits()
                     delegate: Row {
@@ -257,8 +212,10 @@ PluginComponent {
 
                 StyledText {
                     width: parent.width
-                    visible: data.writerInstalled && !data.hasData
-                    text: "Waiting for the first Claude Code session to report usage…"
+                    visible: !data.hasData
+                    text: data.fetchFailed
+                        ? "Couldn't read Claude usage. Is Claude Code signed in? Run `claude` and `/login`, then reopen."
+                        : "Loading usage…"
                     wrapMode: Text.WordWrap
                     color: Theme.surfaceVariantText
                     font.pixelSize: Theme.fontSizeSmall

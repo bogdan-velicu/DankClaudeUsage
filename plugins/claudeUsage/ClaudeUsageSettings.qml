@@ -1,15 +1,11 @@
 import QtQuick
-import Quickshell
 import qs.Common
 import qs.Widgets
-import qs.Services
 import qs.Modules.Plugins
 
 PluginSettings {
     id: root
     pluginId: "claudeUsage"
-
-    readonly property string pluginDir: Qt.resolvedUrl(".").toString().replace("file://", "")
 
     SelectionSetting {
         settingKey: "displayStyle"
@@ -88,56 +84,23 @@ PluginSettings {
         defaultValue: "60"
     }
 
+    SelectionSetting {
+        settingKey: "refreshInterval"
+        label: "Refresh interval"
+        description: "How often to query the usage endpoint"
+        options: [
+            {label: "3 minutes", value: "180"},
+            {label: "5 minutes", value: "300"},
+            {label: "10 minutes", value: "600"}
+        ]
+        defaultValue: "300"
+    }
+
     StringSetting {
         settingKey: "cachePath"
         label: "Cache path override"
         description: "Leave blank for the default ($XDG_CACHE_HOME/dms-claude-usage.json)"
         placeholder: ""
         defaultValue: ""
-    }
-
-    Column {
-        width: parent.width
-        spacing: Theme.spacingS
-
-        StyledText {
-            text: "Live updates"
-            font.pixelSize: Theme.fontSizeLarge
-            font.weight: Font.Bold
-            color: Theme.surfaceText
-        }
-
-        StyledText {
-            width: parent.width
-            text: "Wraps your Claude Code statusline (backed up first) so usage data refreshes automatically. Remove to restore your original statusline."
-            wrapMode: Text.WordWrap
-            color: Theme.surfaceVariantText
-            font.pixelSize: Theme.fontSizeSmall
-        }
-
-        Row {
-            spacing: Theme.spacingM
-
-            DankButton {
-                text: "Set up live updates"
-                iconName: "bolt"
-                onClicked: {
-                    Quickshell.execDetached(["sh", root.pluginDir + "install.sh"])
-                    ToastService.showInfo("Claude Usage: live updates enabled",
-                        "Open or continue a Claude Code session to populate the data.")
-                }
-            }
-
-            DankButton {
-                text: "Remove"
-                iconName: "delete"
-                backgroundColor: Theme.surfaceContainerHigh
-                textColor: Theme.surfaceText
-                onClicked: {
-                    Quickshell.execDetached(["sh", root.pluginDir + "uninstall.sh"])
-                    ToastService.showInfo("Claude Usage: live updates disabled")
-                }
-            }
-        }
     }
 }

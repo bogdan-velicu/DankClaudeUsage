@@ -1,24 +1,27 @@
+// ClaudeUsageData.qml — non-visual: fetches usage from the Claude Code OAuth
+// endpoint (via fetch-usage.sh, using the local credentials), caches it, and
+// exposes the parsed model + a countdown clock. Zero setup.
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs.Common
 
 Item {
     id: root
 
-    property string cachePath: ""
+    property string cachePath: ""      // blank => default path
+    property int refreshMs: 300000     // poll interval
 
     property int capturedAt: 0
-    property var fiveHour: null
+    property var fiveHour: null         // {used_percentage:int, resets_at:int} or null
     property var sevenDay: null
     property var sevenDaySonnet: null
     property bool hasData: fiveHour !== null || sevenDay !== null
+    property bool fetchFailed: false    // last fetch failed (e.g. not logged in / token expired)
     property int nowEpoch: Math.floor(Date.now() / 1000)
 
-    // Whether the statusline writer is wired into Claude Code's settings.
-    property bool writerInstalled: false
-    readonly property string _claudeSettingsPath:
-        (Quickshell.env("HOME") || "") + "/.claude/settings.json"
-
+    readonly property string _scriptPath:
+        Qt.resolvedUrl("fetch-usage.sh").toString().replace("file://", "")
     readonly property string _defaultPath:
         (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache"))
         + "/dms-claude-usage.json"
@@ -34,6 +37,16 @@ Item {
         } catch (e) {
             console.warn("claudeUsage: cache parse failed:", e)
         }
+    }
+
+    // Run fetch-usage.sh; it writes the cache, which the FileView below picks up.
+    function refresh() {
+        const cmd = cachePath !== ""
+            ? ["sh", "-c", "CACHE_FILE='" + cachePath + "' sh '" + _scriptPath + "'"]
+            : ["sh", _scriptPath]
+        Proc.runCommand("claudeUsage.fetch", cmd, function (stdout, exitCode) {
+            root.fetchFailed = (exitCode !== 0)
+        }, 100)
     }
 
     function countdown(resetEpoch) {
@@ -53,6 +66,15 @@ Item {
         return Math.floor((nowEpoch - capturedAt) / 60)
     }
 
+    Component.onCompleted: root.refresh()
+
+    Timer {
+        interval: root.refreshMs
+        running: true
+        repeat: true
+        onTriggered: root.refresh()
+    }
+
     Timer {
         interval: 1000
         running: true
@@ -68,25 +90,7 @@ Item {
         onLoaded: root._parse(cacheFile.text())
         onFileChanged: reload()
         onLoadFailed: error => {
-            console.log("claudeUsage: cache not loaded:", error)
+            // No cache yet — the first refresh() will create it.
         }
-    }
-
-    FileView {
-        id: claudeSettingsFile
-        path: root._claudeSettingsPath
-        blockLoading: false
-        watchChanges: true
-        onLoaded: {
-            try {
-                const cmd = (JSON.parse(claudeSettingsFile.text())
-                    .statusLine || {}).command || ""
-                root.writerInstalled = cmd.indexOf("claude-usage-writer.sh") !== -1
-            } catch (e) {
-                root.writerInstalled = false
-            }
-        }
-        onFileChanged: reload()
-        onLoadFailed: error => { root.writerInstalled = false }
     }
 }
